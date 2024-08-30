@@ -1,0 +1,40 @@
+[package]
+name = "cyclicism"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "cyclicism"
+path = "src/lib.rs"
+
+
+[[bin]]
+name = "cleaner"
+path = "src/cleaner.rs"
+
+[[bin]]
+name = "cli"
+path = "src/cli.rs"
+
+[[bin]]
+name = "embeddor"
+path = "src/embeddor.rs"
+
+[[bin]]
+name = "scraper"
+path = "src/scraper.rs"
+
+[dependencies]
+uuid = { version = "1.10.0", features = ["v3"] }
+reqwest = "0.12.7"
+chrono = "0.4"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1.0.86"
+fastembed = "4"
+serde = "1.0.208"
+serde_json = "1.0.127"
+qdrant-client = "1.11.1"
+tonic = "0.12.1"
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres"] }
+kdam = "0.5.2"
+regex = "1.10.6"
