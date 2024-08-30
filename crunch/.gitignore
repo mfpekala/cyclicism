@@ -1,0 +1,5 @@
+.cargo
+.fastembed_cache/
+/target
+scrapes/
+qdrant_storage/
