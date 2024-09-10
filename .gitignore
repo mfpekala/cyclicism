@@ -5,3 +5,4 @@ planning/
 /target
 scrapes/
 qdrant_storage/
+**/node_modules/

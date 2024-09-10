@@ -124,7 +124,7 @@ pub fn clean_snippet(snippet: String) -> String {
     re.replace_all(&snippet, "").to_string()
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// An image for an article that may be passed to the frontend
 pub struct FrontendImage {
     pub url: String,
@@ -132,7 +132,7 @@ pub struct FrontendImage {
 }
 
 /// The "important" information from an article and it's associated stuff that we will eventually pass to frontend
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FrontendArticle {
     pub uri: String,
     pub web_url: String,
