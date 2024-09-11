@@ -9,7 +9,7 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "api"
-path = "src/api.rs"
+path = "src/api/mod.rs"
 
 [[bin]]
 name = "cleaner"
@@ -26,6 +26,10 @@ path = "src/embeddor.rs"
 [[bin]]
 name = "scraper"
 path = "src/scraper.rs"
+
+[[bin]]
+name = "updater"
+path = "src/updater.rs"
 
 [dependencies]
 uuid = { version = "1.10.0", features = ["v3"] }

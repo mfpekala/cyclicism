@@ -154,7 +154,7 @@ impl Collection {
         Ok(())
     }
 
-    pub async fn top_k(&self, bed: Vec<f32>, k: u64) -> anyhow::Result<Vec<CommonInfo>> {
+    pub async fn top_k(&self, bed: Vec<f32>, k: u64) -> anyhow::Result<Vec<(CommonInfo, f32)>> {
         if bed.len() as u64 != self.bed_dim {
             return Err(anyhow::anyhow!(
                 "bed is not the right size, got {}, expected {}",
@@ -177,9 +177,12 @@ impl Collection {
             .map(|p| {
                 let serde_string = serde_json::to_string(&p.payload).unwrap();
                 let info = serde_json::from_str::<CommonInfo>(&serde_string);
-                info
+                (info, p.score)
             })
-            .filter_map(|info| info.ok())
+            .filter_map(|(info, score)| match info {
+                Ok(thing) => Some((thing, score)),
+                _ => None,
+            })
             .collect())
     }
 }

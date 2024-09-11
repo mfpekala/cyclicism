@@ -1,9 +1,12 @@
 use chrono::Datelike;
 use sqlx::{postgres::PgPoolOptions, PgPool, Pool, Postgres, Row};
 
-use crate::nyt::{clean_snippet, parse_pub_date, FrontendArticle, FrontendImage, ScrapedArticle};
+use crate::nyt::{
+    clean_snippet, parse_pub_date, ContemporaryArticle, FrontendArticle, FrontendImage,
+    ScrapedArticle,
+};
 
-pub async fn get_pool(max_connections: u32) -> anyhow::Result<Pool<Postgres>> {
+pub async fn get_pg_pool(max_connections: u32) -> anyhow::Result<Pool<Postgres>> {
     let pool = PgPoolOptions::new()
         .max_connections(max_connections)
         .connect("postgres://postgres:password@localhost:5432/cyclicism")
@@ -174,5 +177,58 @@ impl FrontendArticle {
             news_desk: article_row.get(5),
             type_of_material: article_row.get(6),
         })
+    }
+}
+
+impl ContemporaryArticle {
+    pub async fn upsert(&self, pg: &Pool<Postgres>) -> anyhow::Result<()> {
+        let (yy, mm, dd) = self.get_date_parts()?;
+        sqlx::query(
+            r#"
+            INSERT INTO contemporary_article
+                (uri, url, yy, mm, dd, title, abstract, section, subsection, item_type, kicker)
+            VALUES
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            ON CONFLICT (uri) DO UPDATE
+            SET url = $2, yy = $3, mm = $4, dd = $5, title = $6, abstract = $7, section = $8, subsection = $9, item_type = $10, kicker = $11
+            "#,
+        )
+        .bind(&self.uri)
+        .bind(&self.url)
+        .bind(yy as i32)
+        .bind(mm as i32)
+        .bind(dd as i32)
+        .bind(&self.title)
+        .bind(&self.abstract_)
+        .bind(&self.section)
+        .bind(&self.subsection)
+        .bind(&self.item_type)
+        .bind(&self.kicker)
+        .execute(pg)
+        .await?;
+        if let Some(multi) = self.multimedia.as_ref() {
+            if let Some(first) = multi.iter().next() {
+                sqlx::query(
+                    r#"
+                INSERT INTO contemporary_multimedia
+                    (uri, url, rank, format, type_, subtype, caption)
+                VALUES
+                    ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (uri) DO UPDATE
+                SET url = $2, rank = $3, format = $4, type_ = $5, subtype = $6, caption = $7
+                "#,
+                )
+                .bind(&self.uri)
+                .bind(&first.url)
+                .bind(0)
+                .bind(&first.format)
+                .bind(&first.type_)
+                .bind(&first.subtype)
+                .bind(&first.caption)
+                .execute(pg)
+                .await?;
+            }
+        }
+        Ok(())
     }
 }

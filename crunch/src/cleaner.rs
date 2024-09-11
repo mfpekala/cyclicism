@@ -4,7 +4,7 @@ use chrono::NaiveDate;
 use cyclicism::{
     get_date, get_json_path,
     nyt::ScrapedJson,
-    pg::{apply_migrations, get_pool},
+    pg::{apply_migrations, get_pg_pool},
 };
 use sqlx::PgPool;
 use tokio::{
@@ -59,7 +59,7 @@ async fn worker_thread(
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let pool: Arc<PgPool> = Arc::new(get_pool(NUM_WORKERS + 2).await?.into());
+    let pool: Arc<PgPool> = Arc::new(get_pg_pool(NUM_WORKERS + 2).await?.into());
     apply_migrations(&pool).await?;
 
     let mut raw_data = vec![];

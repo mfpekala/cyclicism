@@ -1,10 +1,12 @@
-use axum::{
-    extract::{Json, Query},
-    routing::get,
-    Router,
+use axum::{routing::get, Router};
+use cyclicism::{
+    nyt::FrontendArticle,
+    pg::{apply_migrations, get_pg_pool},
 };
-use cyclicism::nyt::FrontendArticle;
 use tracing::info;
+
+mod combos_on_date;
+use combos_on_date::get_combos_on_date;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -14,8 +16,14 @@ async fn main() -> anyhow::Result<()> {
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
+    // Database
+    let pg_pool = get_pg_pool(6).await?;
+    apply_migrations(&pg_pool).await?;
+
     // Routing
-    let app = Router::new().route("/combos_on_date", get(combos_on_date));
+    let app = Router::new()
+        .route("/combos_on_date", get(get_combos_on_date))
+        .with_state(pg_pool);
 
     // Run it
     info!(
@@ -31,13 +39,6 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     axum::serve(listener, app).await?;
     Ok(())
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct CombosOnDateReq {
-    year: u32,
-    month: u32,
-    day: u32,
 }
 
 /// NOTE: Rn these types are just wrappers, nice to have if we want specialized data on either
@@ -56,16 +57,4 @@ struct PastArticle {
 struct Combo {
     contemporary: ContemporaryArticle,
     past: Vec<PastArticle>,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct CombosOnDateResp {
-    combos: Vec<Combo>,
-}
-
-/// Returns the stories from a given date. This includes the actual stories from that day,
-/// and the stories in our index that were most similar.
-#[tracing::instrument]
-async fn combos_on_date(Query(req): Query<CombosOnDateReq>) -> Json<CombosOnDateResp> {
-    CombosOnDateResp { combos: vec![] }.into()
 }

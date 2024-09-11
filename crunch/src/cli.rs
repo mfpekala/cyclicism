@@ -1,7 +1,7 @@
 use cyclicism::{
     mydrant::{BedSource, Collection},
     nyt::FrontendArticle,
-    pg::get_pool,
+    pg::get_pg_pool,
 };
 use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
 use qdrant_client::{qdrant::Distance, Qdrant};
@@ -16,7 +16,7 @@ const DISTANCE: Distance = Distance::Cosine;
 async fn main() -> anyhow::Result<()> {
     let qdrant = Qdrant::from_url("http://localhost:6334").build()?;
     let collection = Collection::new(BED_SOURCE, BED_DIM, BED_MODEL, DISTANCE, qdrant);
-    let pool: PgPool = get_pool(6).await?.into();
+    let pool: PgPool = get_pg_pool(6).await?.into();
     let loaded_model =
         TextEmbedding::try_new(InitOptions::new(BED_MODEL).with_show_download_progress(true))?;
     loop {

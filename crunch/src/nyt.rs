@@ -108,6 +108,72 @@ impl ScrapedJson {
     }
 }
 
+#[derive(Debug, serde::Deserialize)]
+pub struct ContemporaryMultimedia {
+    pub url: String,
+    pub format: String,
+    pub height: u32,
+    pub width: u32,
+    #[serde(rename = "type")]
+    pub type_: String,
+    pub subtype: String,
+    pub caption: String,
+    pub copyright: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct ContemporaryArticle {
+    pub section: String,
+    pub subsection: String,
+    pub title: String,
+    #[serde(rename = "abstract")]
+    pub abstract_: String,
+    pub url: String,
+    pub uri: String,
+    pub byline: String,
+    pub item_type: String,
+    pub updated_date: String,
+    pub created_date: String,
+    pub published_date: String,
+    pub material_type_facet: String,
+    pub kicker: String,
+    pub des_facet: Vec<String>,
+    pub org_facet: Vec<String>,
+    pub per_facet: Vec<String>,
+    pub geo_facet: Vec<String>,
+    pub multimedia: Option<Vec<ContemporaryMultimedia>>,
+    pub short_url: String,
+}
+impl ContemporaryArticle {
+    pub fn get_date_parts(&self) -> anyhow::Result<(u32, u32, u32)> {
+        let dt: DateTime<FixedOffset> =
+            DateTime::parse_from_str(&self.published_date, "%Y-%m-%dT%H:%M:%S%:z").unwrap();
+        Ok((dt.year_ce().1 as u32, dt.month0() + 1, dt.day()))
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct ContemporaryJson {
+    pub status: String,
+    pub copyright: String,
+    pub section: String,
+    pub last_updated: String,
+    pub num_results: u32,
+    pub results: Vec<ContemporaryArticle>,
+}
+
+/// Fetches the current articles on the homepage as `ContemporaryArticle`s.
+pub async fn get_current_homepage(api_key: &str) -> anyhow::Result<Vec<ContemporaryArticle>> {
+    let resp = reqwest::get(format!(
+        "https://api.nytimes.com/svc/topstories/v2/home.json?api-key={}",
+        api_key
+    ))
+    .await?;
+    let text = resp.text().await?;
+    let obj = serde_json::from_str::<ContemporaryJson>(&text)?;
+    Ok(obj.results)
+}
+
 pub fn uri_to_uuid(uri: &str) -> Uuid {
     Uuid::new_v3(&Uuid::NAMESPACE_URL, uri.as_bytes())
 }
